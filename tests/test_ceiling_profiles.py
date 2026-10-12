@@ -34,9 +34,23 @@ def test_exact_experimental_profiles_have_no_catalogue_inheritance(model):
     assert p.effect_grammar is None and p.scene_catalogue_sku is None
     assert not p.supports_segment_brightness and not p.supports_segment_color_temperature
     assert not p.supports_custom_effects and not p.supports_music_mode and not p.supports_scenes
-    assert not p.static_readback_echoes_color or model == "H601C"
+    assert not p.static_readback_echoes_color
     require_profile_packet(build_brightness(50, model), p)
     assert resolve_model("H60C1") is None
+
+
+def test_h601c_discoverable_and_catalogue_profile():
+    p = get_profile("H601C")
+    assert resolve_model("h601c") == "H601C" and p.support_quality is SupportQuality.EXPERIMENTAL
+    assert model_from_ble_name("Govee_H601C_test") == "H601C"
+    assert model_from_ble_name("ihoment_H601C_test") == "H601C"
+    assert p.command_operations == {"power", "brightness", "static"}
+    assert supported_effect_categories("H601C") == ()
+    assert p.effect_grammar is None and p.scene_catalogue_sku is None
+    assert not p.supports_segment_brightness and not p.supports_segment_color_temperature
+    assert not p.supports_custom_effects and not p.supports_music_mode and not p.supports_scenes
+    assert not p.static_readback_echoes_color
+    require_profile_packet(build_brightness(50, "H601C"), p)
 
 
 @pytest.mark.parametrize(
@@ -93,17 +107,11 @@ def test_h60a1_kelvin_bounds_track_hardware_without_authorizing_writes(hardware,
 @pytest.mark.parametrize("pact", [(None, None), (1, 1), (2, 1), (2, 2), (3, 1)])
 def test_h601c_basic_app_encoding_has_no_artificial_revision_restriction(pact):
     p = device_profile("H601C", *pact)
-    assert p == get_profile("H601C") and p.command_grammar == p.status_grammar == "H601C"
+    assert p == get_profile("H601C") and p.command_grammar == "H601C" and p.status_grammar is None
     assert p.supports_rgb and p.supports_color_temperature and p.whole_device_mask == 1
     assert (p.min_color_temp_kelvin, p.max_color_temp_kelvin) == (2700, 6500)
-    assert p.read_domains == {
-        ReadDomain.POWER,
-        ReadDomain.BRIGHTNESS,
-        ReadDomain.COLOUR_MODE,
-        ReadDomain.FIRMWARE,
-        ReadDomain.HARDWARE,
-    }
-    assert p.static_readback_echoes_color and p.static_readback_kelvin and p.static_readback_zero_kelvin_is_rgb
+    assert not p.read_domains
+    assert not p.static_readback_echoes_color and not p.static_readback_kelvin
     assert not p.supports_segments
     require_profile_packet(build_color_rgb(1, 2, 3, "H601C"), p)
 
